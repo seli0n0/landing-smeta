@@ -482,13 +482,12 @@ function mount() {
       + (e.kind === 'third' ? ' (платит ' + esc(e.who) + ')' : '') + '<small>' + esc(e.when) + '</small></span></label>';
   }).join('');
   var work = EXTRAS.filter(function (e) { return e.kind === 'work'; });
-  var third = EXTRAS.filter(function (e) { return e.kind === 'third'; });
   el('foot').innerHTML = 'Расценки: экран ' + rub(PRICE.screen) + ', фото ' + rub(PRICE.photo) + ', позиция прайса '
     + rub(PRICE.item) + ', форма ' + rub(PRICE.form) + ', подключение адреса ' + rub(PRICE.connect) + ', публикация '
     + rub(PRICE.publish) + ', правка ' + rub(PRICE.edit) + ', поддержка ' + rub(PRICE.support) + ' в месяц. '
     + 'Пакеты: ' + PACKS.map(function (p) { return '«' + p.name + '» ' + rub(p.price); }).join(', ')
-    + ' — фикс берётся только если он не дороже счётчика. Доп. пунктов: ' + work.length + ' наших и ' + third.length
-    + ' платежей третьим лицам. Цены адреса и регистратора взяты 27.10.2026 с публичных страниц Рег.ру '
+    + ' — фикс берётся только если он не дороже счётчика. Доп. пунктов: ' + work.length
+    + ' наших работ и платёж третьим лицам (адрес в зоне .рф). Цены адреса и регистратора взяты 27.10.2026 с публичных страниц Рег.ру '
     + '(регистрация .ru и .рф — ' + rub(169) + ' на первый год по акции, продление — ' + rub(RENEW) + ' с 01.04.2026, '
     + 'хостинг — от ' + rub(HOST_MONTH) + ' в месяц).';
 
