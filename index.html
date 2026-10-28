@@ -165,18 +165,13 @@ var DOMAINS = [
 var HOST_MONTH = 181, HOST_YEAR = HOST_MONTH * 12, RENEW = 1199;
 
 var EXTRAS = [
-  { id: 'texts', title: 'Тексты под экраны с языка клиента', price: 1500, kind: 'work', when: 'Расписываем звонок и превращаем вопросы клиентов в тексты блоков.' },
-  { id: 'shoot', title: 'Выезд и съёмка на площадке', price: 3000, kind: 'work', when: 'Когда своих фото нет. До 40 кадров; обработка уже оплачена строкой «фото».' },
   { id: 'logo', title: 'Логотип и фирменный пакет', price: 2500, kind: 'work', when: '3 варианта, исходники, файлы под вывеску и аватарки в мессенджерах.' },
-  { id: 'seo', title: 'SEO-упаковка страницы', price: 1200, kind: 'work', when: 'Title и description по вопросам клиентов, og-картинка, favicon, sitemap.' },
   { id: 'metrics', title: 'Яндекс.Метрика и цель на заявку', price: 1000, kind: 'work', when: 'Через месяц видно, сколько человек зашли и сколько нажали кнопку.' },
   { id: 'cards', title: 'Довести карточку организации в Яндексе и 2ГИС', price: 1500, kind: 'work', when: 'Категория, часы, фото, ссылка на новый адрес.' },
-  { id: 'notify', title: 'Уведомление о заявке на почту или в Telegram', price: 800, kind: 'work', when: 'Заявка не зависит от того, открыт ли вечером WhatsApp.' },
   { id: 'branch', title: 'Страница-дубль для второго адреса', price: 2000, kind: 'work', when: 'Тот же лендинг со своим телефоном, часами и адресом.' },
   { id: 'migrate', title: 'Перенос страницы из конструктора', price: 2500, kind: 'work', when: 'Собираем то же содержимое на своём домене и выходим из подписки.' },
   { id: 'train', title: 'Обучить править прайс самому', price: 700, kind: 'work', when: 'Час разбора и памятка: цены меняются без нас.' },
   { id: 'rush', title: 'Сдача за 48 часов', price: 2000, kind: 'work', when: 'Сдвигаем очередь: собрано и выложено за два дня.' },
-  { id: 'mail', title: 'Почта на домене «под ключ»', price: 4095, kind: 'third', who: 'Рег.ру', when: 'Нужна, если адрес почты уже напечатан в карточке 2ГИС.' },
   { id: 'zone', title: 'Второй адрес в зоне .рф', price: 169, kind: 'third', who: 'реестр через регистратора', when: 'Дубль имени в кириллической зоне с редиректом на основной адрес.' }
 ];
 
@@ -279,7 +274,7 @@ function rows(r) {
   r.adds.forEach(function (l) { out.push({ kind: 'pay', label: l.label, calc: l.calc, sum: l.sum, who: l.who }); });
   out.push({ kind: 'sub', label: 'Итого наша работа', calc: 'содержимое плюс подключение, допы, правки и поддержка', sum: r.work, who: 'нам' });
   r.thirds.forEach(function (l) { out.push({ kind: 'other', label: l.label, calc: l.calc, sum: l.sum, who: l.who }); });
-  out.push({ kind: 'sub', label: 'Итого платим третьим лицам', calc: 'адрес, хостинг, почта — это не наша выручка', sum: r.third, who: 'реестр / Рег.ру' });
+  out.push({ kind: 'sub', label: 'Итого платим третьим лицам', calc: 'адрес и хостинг — это не наша выручка', sum: r.third, who: 'реестр / Рег.ру' });
   out.push({ kind: 'total', label: 'ИТОГО первый год', calc: '', sum: r.total, who: 'счёт клиенту' });
   return out;
 }
@@ -301,7 +296,7 @@ function render() {
   el('stats').innerHTML = [
     ['Наша работа', rub(r.work), r.pack ? 'пакет «' + r.pack.name + '» ' + rub(r.pack.price) + ' + адрес, правки, допы' : 'по единицам: ' + rub(r.units) + ' + адрес, правки, допы', 'green'],
     ['Доп. пункты', rub(r.extraWork + r.extraThird), picked.length ? picked.length + ' включено' : 'ни один не выбран', ''],
-    ['Платит не нам', rub(r.third), 'адрес, хостинг, почта', ''],
+    ['Платит не нам', rub(r.third), 'адрес и хостинг', ''],
     ['Итого первый год', rub(r.total), 'ровно то, что видит клиент в счёте', 'warn'],
     ['Со второго года', rub(r.secondYear), 'продление адреса' + (s.host ? ' и хостинг' : '') + '; поддержка по желанию', '']
   ].map(function (x) {
@@ -404,7 +399,7 @@ function estimateHtml(s, r) {
     + (s.manager ? 'Смету подготовил: ' + esc(s.manager) + '<br>' : '')
     + (s.contact ? 'Связаться: ' + esc(s.contact) + '<br>' : '')
     + 'Смета действительна 14 дней.</div>'
-    + '<p class="foot">Цены на адрес, хостинг и почту — прайс Рег.ру от 27.10.2026; перед подписанием сверяем в личном кабинете. '
+    + '<p class="foot">Цены на адрес и хостинг — прайс Рег.ру от 27.10.2026; перед подписанием сверяем в личном кабинете. '
     + 'Работа и сторонние платежи в смете разделены специально: адрес — это плата реестру, а не за сайт.</p>'
     + '</div></body></html>';
 }
@@ -468,7 +463,7 @@ function restore() {
     if (d.domain) el('domain').value = d.domain;
     if (typeof d.host === 'boolean') el('host').checked = d.host;
     if (d.support != null) el('support').value = d.support;
-    EXTRAS.forEach(function (e) { if (d.extras && d.extras[e.id]) el('x-' + e.id).checked = true; });
+    EXTRAS.forEach(function (e) { var box = el('x-' + e.id); if (box && d.extras && d.extras[e.id]) box.checked = true; });
     ['client', 'city', 'niche', 'manager', 'contact'].forEach(function (k) { if (d[k]) el(k).value = d[k]; });
   } catch (e) {}
 }
@@ -495,7 +490,7 @@ function mount() {
     + ' — фикс берётся только если он не дороже счётчика. Доп. пунктов: ' + work.length + ' наших и ' + third.length
     + ' платежей третьим лицам. Цены адреса и регистратора взяты 27.10.2026 с публичных страниц Рег.ру '
     + '(регистрация .ru и .рф — ' + rub(169) + ' на первый год по акции, продление — ' + rub(RENEW) + ' с 01.04.2026, '
-    + 'хостинг — от ' + rub(HOST_MONTH) + ' в месяц, почта под ключ — ' + rub(4095) + ').';
+    + 'хостинг — от ' + rub(HOST_MONTH) + ' в месяц).';
 
   var inputs = document.querySelectorAll('input, select');
   for (var i = 0; i < inputs.length; i++) {
