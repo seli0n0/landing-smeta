@@ -3,8 +3,8 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Генератор сметы на лендинг · КМВ и Лермонтов</title>
-<meta name="description" content="Смета на одностраничный сайт считается по единицам: экран, фото, позиция прайса. Итог собирается в файл для клиента одним нажатием.">
+<title>Генератор сметы на сайт · КМВ и Лермонтов</title>
+<meta name="description" content="Смета на сайт считается по единицам: страница, фото, позиция прайса. Итог собирается в файл для клиента одним нажатием. Есть вторая смета — на мультилинк.">
 <style>
   :root {
     --bg: #0f1115;
@@ -66,21 +66,35 @@
   button.primary { background: var(--accent); border-color: var(--accent); color: #08250f; font-weight: 700; }
   button:hover { filter: brightness(1.08); }
   .note { font-size: 12px; color: var(--muted); margin-top: 10px; }
+  a { color: var(--info); }
+  .nav { display: flex; flex-wrap: wrap; gap: 8px; margin: 0 0 18px; }
+  .nav a { font-size: 13px; text-decoration: none; border: 1px solid var(--line); background: var(--panel); border-radius: 999px; padding: 6px 12px; }
+  .nav a[aria-current="page"] { border-color: var(--accent); color: var(--accent); }
+  .nav a:hover { filter: brightness(1.15); }
   #status { font-size: 13px; color: var(--accent); min-height: 20px; margin-top: 8px; }
   footer { color: var(--muted); font-size: 12px; margin-top: 18px; }
-  @media (max-width: 620px) { h1 { font-size: 20px; } .check { align-items: flex-start; } }
+  @media (max-width: 620px) {
+    h1 { font-size: 20px; } .check { align-items: flex-start; }
+    .grid { grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); }
+    .step { padding: 12px; }
+    .step table { display: block; overflow-x: auto; font-size: 13px; }
+  }
 </style>
 </head>
 <body>
 <div class="wrap">
-  <h1>Генератор сметы на лендинг</h1>
+  <h1>Генератор сметы на сайт</h1>
   <p class="lead">
-    Цена считается по единицам: экран страницы — 1 000 ₽, фото — 100 ₽, позиция прайса — 50 ₽. Пакет берётся только
+    Цена считается по единицам: страница сайта — 1 000 ₽, фото — 100 ₽, позиция прайса — 50 ₽. Пакет берётся только
     тогда, когда он дешевле суммы по единицам. Кнопка внизу собирает готовый файл сметы для клиента.
+  </p>
+  <p class="nav">
+    <a href="index.html" aria-current="page">Смета на сайт</a>
+    <a href="multilink.html">Смета на мультилинк — страница со списком кнопок</a>
   </p>
 
   <div class="step">
-    <div class="step-head"><span class="badge">Шаг 1</span><b>Сколько на странице чего лежит</b></div>
+    <div class="step-head"><span class="badge">Шаг 1</span><b>Сколько в сайте чего лежит</b></div>
     <div class="grid" id="qty"></div>
   </div>
 
@@ -88,7 +102,7 @@
     <div class="step-head"><span class="badge">Шаг 2</span><b>Адрес, размещение и поддержка</b></div>
     <div class="grid">
       <div class="field">
-        <label for="domain">Адрес страницы — за него платит реестр, не мы</label>
+        <label for="domain">Адрес сайта — за него платит реестр, не мы</label>
         <select id="domain"></select>
         <span class="hint" id="domain-hint"></span>
       </div>
@@ -166,8 +180,7 @@ var HOST_MONTH = 181, HOST_YEAR = HOST_MONTH * 12, RENEW = 1199;
 
 var EXTRAS = [
   { id: 'logo', title: 'Логотип и фирменный пакет', price: 2500, kind: 'work', when: '3 варианта, исходники, файлы под вывеску и аватарки в мессенджерах.' },
-  { id: 'metrics', title: 'Яндекс.Метрика и цель на заявку', price: 1000, kind: 'work', when: 'Через месяц видно, сколько человек зашли и сколько нажали кнопку.' },
-  { id: 'branch', title: 'Страница-дубль для второго адреса', price: 2000, kind: 'work', when: 'Тот же лендинг со своим телефоном, часами и адресом.' },
+  { id: 'branch', title: 'Страница-дубль для второго адреса', price: 2000, kind: 'work', when: 'Тот же сайт со своим телефоном, часами и адресом.' },
   { id: 'migrate', title: 'Перенос страницы из конструктора', price: 2500, kind: 'work', when: 'Собираем то же содержимое на своём домене и выходим из подписки.' },
   { id: 'train', title: 'Обучить править прайс самому', price: 700, kind: 'work', when: 'Час разбора и памятка: цены меняются без нас.' },
   { id: 'rush', title: 'Сдача за 48 часов', price: 2000, kind: 'work', when: 'Сдвигаем очередь: собрано и выложено за два дня.' },
@@ -175,7 +188,7 @@ var EXTRAS = [
 ];
 
 var QTY = [
-  { key: 'screens', label: 'Страниц на сайте', max: 12, price: PRICE.screen, unit: 'за экран' },
+  { key: 'screens', label: 'Страниц на сайте', max: 12, price: PRICE.screen, unit: 'за страницу' },
   { key: 'photos', label: 'Фото в галерее', max: 120, price: PRICE.photo, unit: 'за фото' },
   { key: 'items', label: 'Позиций в прайсе', max: 300, price: PRICE.item, unit: 'за строку' },
   { key: 'edits', label: 'Правок после первой недели', max: 50, price: PRICE.edit, unit: 'за правку, две первые бесплатно' }
@@ -184,6 +197,13 @@ var DEFAULTS = { screens: 4, photos: 10, items: 15, edits: 0 };
 
 function rub(n) {
   return String(Math.round(n)).replace(/\B(?=(\d{3})+(?!\d))/g, ' ') + ' ₽';
+}
+// forms = [1 страница, 2 страницы, 5 страниц]
+function plural(n, forms) {
+  var t = n % 10, h = n % 100;
+  if (t === 1 && h !== 11) return forms[0];
+  if (t >= 2 && t <= 4 && (h < 10 || h >= 20)) return forms[1];
+  return forms[2];
 }
 function clamp(v, max) {
   var n = parseInt(String(v).replace(/\D/g, ''), 10);
@@ -225,7 +245,7 @@ function compute(s) {
 
   // Разбивка содержимого: эти суммы уже внутри строки «к оплате за содержимое», отдельно они не платятся.
   var parts = [
-    { label: 'Экраны', calc: s.qty.screens + ' × ' + rub(PRICE.screen), sum: s.qty.screens * PRICE.screen },
+    { label: 'Страницы', calc: s.qty.screens + ' × ' + rub(PRICE.screen), sum: s.qty.screens * PRICE.screen },
     { label: 'Фото в галерее', calc: s.qty.photos + ' × ' + rub(PRICE.photo), sum: s.qty.photos * PRICE.photo },
     { label: 'Позиции прайса', calc: s.qty.items + ' × ' + rub(PRICE.item), sum: s.qty.items * PRICE.item },
     { label: 'Форма заявки в мессенджер', calc: s.form ? 'включена' : 'не нужна — только кнопка звонка и WhatsApp', sum: s.form ? PRICE.form : 0 },
@@ -328,10 +348,10 @@ function esc(s) { return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').
 function estimateText(s, r) {
   var d = today();
   var out = [];
-  out.push('Смета на одностраничный сайт' + (s.city ? ' — ' + s.city : ''));
+  out.push('Смета на сайт' + (s.city ? ' — ' + s.city : ''));
   out.push((s.client || 'Клиент') + (s.niche ? ' (' + s.niche + ')' : '') + ' · ' + d.human);
   out.push('');
-  out.push('Состав страницы (внутри цены содержимого, отдельно не оплачивается):');
+  out.push('Состав сайта (внутри цены содержимого, отдельно не оплачивается):');
   r.parts.forEach(function (l) { out.push('  · ' + l.label + ' — ' + l.calc + ' = ' + rub(l.sum)); });
   out.push('  По счётчику было бы ' + rub(r.units) + '.');
   out.push('');
@@ -365,7 +385,7 @@ function estimateHtml(s, r) {
   var extras = EXTRAS.filter(function (e) { return s.extras[e.id]; });
   return '<!doctype html><html lang="ru"><head><meta charset="utf-8">'
     + '<meta name="viewport" content="width=device-width, initial-scale=1">'
-    + '<title>Смета на лендинг — ' + esc(s.client || 'клиент') + '</title><style>'
+    + '<title>Смета на сайт — ' + esc(s.client || 'клиент') + '</title><style>'
     + 'body{margin:0;padding:24px;font:16px/1.55 -apple-system,"Segoe UI",Roboto,Arial,sans-serif;color:#14181f;background:#fff}'
     + '.w{max-width:760px;margin:0 auto}h1{font-size:22px;margin:0 0 4px}.sub{color:#5b6675;font-size:14px;margin:0 0 20px}'
     + 'table{width:100%;border-collapse:collapse;margin:0 0 16px}th{text-align:left;font-size:12px;color:#5b6675;'
@@ -378,22 +398,23 @@ function estimateHtml(s, r) {
     + '.sign{margin-top:26px;padding-top:14px;border-top:1px solid #e2e7ee}.foot{color:#93a0b1;font-size:12px;margin-top:18px}'
     + '@media print{body{padding:0}.w{max-width:none}}@page{margin:16mm}'
     + '</style></head><body><div class="w">'
-    + '<h1>Смета на одностраничный сайт</h1>'
+    + '<h1>Смета на сайт</h1>'
     + '<p class="sub">' + esc(s.client || 'Клиент') + (s.city ? ' · ' + esc(s.city) : '') + (s.niche ? ' · ' + esc(s.niche) : '')
     + ' · ' + d.human + '</p>'
     + '<table><thead><tr><th>Позиция</th><th>Сумма</th><th>Кому платим</th></tr></thead><tbody>' + body + '</tbody></table>'
     + '<div class="box"><b>Что входит в работу</b>'
-    + esc(s.qty.screens) + ' экрана страницы, ' + esc(s.qty.photos) + ' фото, ' + esc(s.qty.items) + ' позиций прайса, '
+    + esc(s.qty.screens) + ' ' + plural(s.qty.screens, ['страница', 'страницы', 'страниц']) + ' сайта, '
+    + esc(s.qty.photos) + ' фото, ' + esc(s.qty.items) + ' позиций прайса, '
     + (s.form ? 'форма заявки в мессенджер' : 'кнопка звонка и кнопка WhatsApp')
     + ', подключение адреса с DNS и SSL, публикация и приёмка на телефоне.'
     + '<ul><li>Две правки в первую неделю после сдачи — бесплатно, дальше 300 ₽ за правку.</li>'
     + '<li>Адрес сайта регистрируется на вашего владельца — это ваша собственность, а не наша.</li>'
-    + '<li>Онлайн-записи, каталога и CRM в смете нет: страница знакомит, прайс показывает, заявка уходит в мессенджер.</li></ul></div>'
+    + '<li>Онлайн-записи, каталога и CRM в смете нет: сайт знакомит, прайс показывает, заявка уходит в мессенджер.</li></ul></div>'
     + (extras.length ? '<div class="box"><b>Дополнительные пункты включены</b><ul>'
         + extras.map(function (e) { return '<li>' + esc(e.title) + ' — ' + rub(e.price) + '. ' + esc(e.when) + '</li>'; }).join('')
         + '</ul></div>' : '')
     + '<div class="box"><b>Второй год</b>' + rub(r.secondYear) + ' — продление адреса'
-    + (s.host ? ' и хостинг' : '') + '. Дальше поддержка по желанию — 1 000 ₽ в месяц, без неё страница работает.'
+    + (s.host ? ' и хостинг' : '') + '. Дальше поддержка по желанию — 1 000 ₽ в месяц, без неё сайт работает.'
     + '</div><div class="sign">'
     + (s.manager ? 'Смету подготовил: ' + esc(s.manager) + '<br>' : '')
     + (s.contact ? 'Связаться: ' + esc(s.contact) + '<br>' : '')
@@ -481,14 +502,15 @@ function mount() {
       + (e.kind === 'third' ? ' (платит ' + esc(e.who) + ')' : '') + '<small>' + esc(e.when) + '</small></span></label>';
   }).join('');
   var work = EXTRAS.filter(function (e) { return e.kind === 'work'; });
-  el('foot').innerHTML = 'Расценки: экран ' + rub(PRICE.screen) + ', фото ' + rub(PRICE.photo) + ', позиция прайса '
+  el('foot').innerHTML = 'Расценки: страница сайта ' + rub(PRICE.screen) + ', фото ' + rub(PRICE.photo) + ', позиция прайса '
     + rub(PRICE.item) + ', форма ' + rub(PRICE.form) + ', подключение адреса ' + rub(PRICE.connect) + ', публикация '
     + rub(PRICE.publish) + ', правка ' + rub(PRICE.edit) + ', поддержка ' + rub(PRICE.support) + ' в месяц. '
     + 'Пакеты: ' + PACKS.map(function (p) { return '«' + p.name + '» ' + rub(p.price); }).join(', ')
     + ' — фикс берётся только если он не дороже счётчика. Доп. пунктов: ' + work.length
     + ' наших работ и платёж третьим лицам (адрес в зоне .рф). Цены адреса и регистратора взяты 27.10.2026 с публичных страниц Рег.ру '
     + '(регистрация .ru и .рф — ' + rub(169) + ' на первый год по акции, продление — ' + rub(RENEW) + ' с 01.04.2026, '
-    + 'хостинг — от ' + rub(HOST_MONTH) + ' в месяц).';
+    + 'хостинг — от ' + rub(HOST_MONTH) + ' в месяц). Если клиенту страницы сайта не нужны, а ссылку дать надо — '
+    + '<a href="multilink.html">отдельная смета на мультилинк</a>: страница-хаб со списком кнопок, пакет от ' + rub(2000) + '.';
 
   var inputs = document.querySelectorAll('input, select');
   for (var i = 0; i < inputs.length; i++) {

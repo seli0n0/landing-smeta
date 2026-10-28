@@ -1,0 +1,538 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Генератор сметы на мультилинк · КМВ и Лермонтов</title>
+<meta name="description" content="Смета на страницу со списком кнопок: страница-хаб, кнопка-ссылка, фото, короткий прайс. Файл сметы для клиента собирается в браузере одним нажатием.">
+<style>
+  :root {
+    --bg: #0f1115;
+    --panel: #171a21;
+    --panel-2: #1f232c;
+    --line: #2a3038;
+    --text: #e8ebef;
+    --muted: #9aa4b1;
+    --accent: #4bd07f;
+    --warn: #f0b429;
+    --info: #5aa9ff;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; padding: 20px 16px 64px;
+    background: var(--bg); color: var(--text);
+    font: 15px/1.5 -apple-system, "Segoe UI", Roboto, Arial, sans-serif;
+  }
+  .wrap { max-width: 1080px; margin: 0 auto; }
+  h1 { font-size: 24px; margin: 0 0 6px; }
+  h2 { font-size: 16px; margin: 0 0 10px; }
+  .lead { color: var(--muted); margin: 0 0 22px; max-width: 760px; }
+  .step { background: var(--panel); border: 1px solid var(--line); border-radius: 12px; padding: 16px; margin-bottom: 14px; }
+  .step-head { display: flex; align-items: center; gap: 10px; margin-bottom: 12px; }
+  .badge { background: var(--panel-2); border: 1px solid var(--line); color: var(--muted); border-radius: 999px; padding: 2px 10px; font-size: 12px; white-space: nowrap; }
+  .step-head b { font-size: 15px; }
+  .grid { display: grid; gap: 12px; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); }
+  .field label { display: block; font-size: 13px; font-weight: 600; margin-bottom: 4px; }
+  .field .hint { display: block; font-size: 12px; color: var(--muted); margin-top: 4px; }
+  input[type="number"], input[type="text"], select {
+    width: 100%; background: var(--panel-2); border: 1px solid var(--line); border-radius: 8px;
+    color: var(--text); padding: 9px 10px; font-size: 15px; font-family: inherit;
+  }
+  input[type="number"]:focus, input[type="text"]:focus, select:focus { outline: 2px solid var(--info); outline-offset: 1px; }
+  .checks { display: grid; gap: 10px; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); }
+  .check { display: flex; gap: 9px; align-items: flex-start; }
+  .check input { margin-top: 3px; width: 16px; height: 16px; accent-color: var(--accent); }
+  .check span { font-size: 13px; }
+  .check small { display: block; color: var(--muted); font-size: 12px; }
+  .stats { display: grid; gap: 10px; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); margin-bottom: 14px; }
+  .stat { background: var(--panel-2); border: 1px solid var(--line); border-radius: 10px; padding: 10px 12px; }
+  .stat i { display: block; font-style: normal; font-size: 12px; color: var(--muted); }
+  .stat b { display: block; font-size: 19px; margin-top: 2px; }
+  .stat.green b { color: var(--accent); }
+  .stat.warn b { color: var(--warn); }
+  table { width: 100%; border-collapse: collapse; font-size: 14px; }
+  th { text-align: left; color: var(--muted); font-weight: 600; font-size: 12px; padding: 6px 8px; border-bottom: 1px solid var(--line); }
+  td { padding: 6px 8px; border-bottom: 1px solid var(--line); vertical-align: top; }
+  td.money { text-align: right; white-space: nowrap; font-variant-numeric: tabular-nums; }
+  tr.total td { font-weight: 700; border-bottom: none; }
+  tr.group td { font-weight: 600; border-top: 1px solid #3d4551; }
+  tr.sub td { color: var(--muted); font-style: italic; }
+  .who { font-size: 12px; color: var(--muted); }
+  .actions { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 6px; }
+  button {
+    font: inherit; border-radius: 10px; padding: 12px 18px; cursor: pointer;
+    border: 1px solid var(--line); background: var(--panel-2); color: var(--text);
+  }
+  button.primary { background: var(--accent); border-color: var(--accent); color: #08250f; font-weight: 700; }
+  button:hover { filter: brightness(1.08); }
+  .note { font-size: 12px; color: var(--muted); margin-top: 10px; }
+  a { color: var(--info); }
+  .nav { display: flex; flex-wrap: wrap; gap: 8px; margin: 0 0 18px; }
+  .nav a { font-size: 13px; text-decoration: none; border: 1px solid var(--line); background: var(--panel); border-radius: 999px; padding: 6px 12px; }
+  .nav a[aria-current="page"] { border-color: var(--accent); color: var(--accent); }
+  .nav a:hover { filter: brightness(1.15); }
+  #status { font-size: 13px; color: var(--accent); min-height: 20px; margin-top: 8px; }
+  footer { color: var(--muted); font-size: 12px; margin-top: 18px; }
+  @media (max-width: 620px) {
+    h1 { font-size: 20px; } .check { align-items: flex-start; }
+    .grid { grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); }
+    .step { padding: 12px; }
+    .step table { display: block; overflow-x: auto; font-size: 13px; }
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>Генератор сметы на мультилинк</h1>
+  <p class="lead">
+    Мультилинк — одна страница со списком кнопок: обложка, имя бренда и ссылки на WhatsApp, Telegram, VK и соцсети.
+    Цена считается по единицам: страница-хаб — 1 000 ₽, кнопка-ссылка — 200 ₽, фото — 100 ₽, позиция короткого прайса —
+    50 ₽. Пакет берётся только тогда, когда он дешевле суммы по единицам. Кнопка внизу собирает файл сметы для клиента.
+  </p>
+  <p class="nav">
+    <a href="index.html">Смета на сайт — страницы, прайс, галерея</a>
+    <a href="multilink.html" aria-current="page">Смета на мультилинк</a>
+  </p>
+
+  <div class="step">
+    <div class="step-head"><span class="badge">Шаг 1</span><b>Сколько кнопок и чего на странице</b></div>
+    <div class="grid" id="qty"></div>
+  </div>
+
+  <div class="step">
+    <div class="step-head"><span class="badge">Шаг 2</span><b>Адрес, размещение и поддержка</b></div>
+    <div class="grid">
+      <div class="field">
+        <label for="domain">Адрес страницы — за него платит реестр, не мы</label>
+        <select id="domain"></select>
+        <span class="hint" id="domain-hint"></span>
+      </div>
+      <div class="field">
+        <label for="support">Поддержка после сдачи — по желанию</label>
+        <select id="support">
+          <option value="0">Не покупать</option>
+          <option value="3">3 месяца</option>
+          <option value="6">6 месяцев</option>
+          <option value="12">12 месяцев</option>
+        </select>
+        <span class="hint" id="support-hint"></span>
+      </div>
+    </div>
+    <div class="checks" style="margin-top:12px">
+      <label class="check"><input type="checkbox" id="host"><span>Хостинг Рег.ру на год (2 172 ₽, платит регистратору)
+        <small>Без галочки страница лежит на нашем размещении — 0 ₽ для клиента.</small></span></label>
+    </div>
+  </div>
+
+  <div class="step">
+    <div class="step-head"><span class="badge">Шаг 3</span><b id="extras-title">Дополнительные пункты</b></div>
+    <div class="checks" id="extras"></div>
+  </div>
+
+  <div class="step">
+    <div class="step-head"><span class="badge">Кто и от кого</span><b>Подписи в файл сметы</b></div>
+    <div class="grid">
+      <div class="field"><label for="client">Компания клиента</label><input type="text" id="client" placeholder="Например: Фотостудия Свет"></div>
+      <div class="field"><label for="city">Город</label><input type="text" id="city" placeholder="Пятигорск"></div>
+      <div class="field"><label for="niche">Что продаёт</label><input type="text" id="niche" placeholder="Фотосессии, зал 60 м"</div>
+      <div class="field"><label for="manager">Кто сдал смету</label><input type="text" id="manager" placeholder="Имя"></div>
+      <div class="field"><label for="contact">Как связаться с нами</label><input type="text" id="contact" placeholder="Телефон или @telegram"></div>
+    </div>
+  </div>
+
+  <div class="step">
+    <div class="stats" id="stats"></div>
+    <h2>Разбор сметы</h2>
+    <table><thead><tr><th>Позиция</th><th class="who" style="width:26%">Расчёт</th><th style="width:16%">Сумма</th><th class="who" style="width:20%">Кому</th></tr></thead><tbody id="lines"></tbody></table>
+    <div class="actions">
+      <button class="primary" id="make">Рассчитать смету продавцу и создать файл</button>
+      <button id="maketxt">Скачать текст сметы (.txt)</button>
+      <button id="copy">Скопировать в буфер</button>
+    </div>
+    <div id="status"></div>
+    <p class="note">
+      Основная кнопка собирает файл <code>smeta-multilink-kompaniya-goda-mesyaca-chisla.html</code>: его можно переслать
+      в WhatsApp, открыть на телефоне и распечатать как PDF. Файл создаётся в браузере и никуда, кроме вашего диска, не
+      отправляется.
+    </p>
+  </div>
+
+  <footer id="foot"></footer>
+</div>
+
+<script>
+'use strict';
+
+var PRICE = { page: 1000, link: 200, photo: 100, item: 50, connect: 1000, publish: 500, edit: 300, support: 1000 };
+var PACKS = [
+  { name: 'Мультилинк', price: 2000, pages: 1, links: 8, photos: 4, items: 0 },
+  { name: 'Мультилинк с прайсом', price: 3500, pages: 2, links: 12, photos: 8, items: 20 }
+];
+var DOMAINS = [
+  { value: 'none', label: 'Свой адрес не берём, стартуем на поддомене', price: 0, who: '—', note: 'Адрес чужой и принадлежит нам. Через месяц всё равно покупаем домен.' },
+  { value: 'new', label: 'Новый свободный домен .ru или .рф — 169 ₽', price: 169, who: 'реестр через регистратора', note: 'Акционная цена Рег.ру на первый год (27.10.2026), без скидки 226 ₽. Продление с 01.04.2026 — 1 199 ₽.' },
+  { value: 'auction', label: 'Освобождающийся домен на аукционе Рег.ру — от 450 ₽', price: 1950, who: 'Рег.ру, аукцион', note: 'Ставка падает по шагам в день удаления имени: 1 950 ₽ в 16:30 и 450 ₽ в 16:45 мск — последний шаг. Гарантий нет.' },
+  { value: 'shop', label: 'Лот в магазине доменов — цена владельца', price: 99000, who: 'продавец', note: 'Пример с прогона 27.10.2026: first-land.ru — 99 000 ₽. Торга обычно нет.' }
+];
+var HOST_MONTH = 181, HOST_YEAR = HOST_MONTH * 12, RENEW = 1199;
+
+var EXTRAS = [
+  { id: 'logo', title: 'Логотип и фирменный пакет', price: 2500, kind: 'work', when: '3 варианта, исходники, файлы под вывеску и аватарки в мессенджерах.' },
+  { id: 'branch', title: 'Вторая страница под другой бренд', price: 2000, kind: 'work', when: 'Тот же мультилинк со своими кнопками и телефоном — второй адрес, второй город или второй бренд.' },
+  { id: 'migrate', title: 'Перенос из конструктора', price: 2500, kind: 'work', when: 'Собираем те же кнопки на своём домене и выходим из подписки за 450 ₽ в месяц.' },
+  { id: 'train', title: 'Обучить менять кнопки и цены самому', price: 700, kind: 'work', when: 'Час разбора и памятка: ссылки и прайс меняются без нас.' },
+  { id: 'rush', title: 'Сдача за 48 часов', price: 2000, kind: 'work', when: 'Сдвигаем очередь: собрано и выложено за два дня.' },
+  { id: 'zone', title: 'Второй адрес в зоне .рф', price: 169, kind: 'third', who: 'реестр через регистратора', when: 'Дубль имени в кириллической зоне с редиректом на основной адрес.' }
+];
+
+var QTY = [
+  { key: 'pages', label: 'Страниц мультилинка', max: 3, price: PRICE.page, unit: 'за страницу' },
+  { key: 'links', label: 'Кнопок со ссылками', max: 20, price: PRICE.link, unit: 'за кнопку' },
+  { key: 'photos', label: 'Фото и обложки', max: 30, price: PRICE.photo, unit: 'за фото' },
+  { key: 'items', label: 'Позиций короткого прайса', max: 60, price: PRICE.item, unit: 'за строку' },
+  { key: 'edits', label: 'Правок после первой недели', max: 50, price: PRICE.edit, unit: 'за правку, две первые бесплатно' }
+];
+var DEFAULTS = { pages: 1, links: 6, photos: 2, items: 0, edits: 0 };
+
+function rub(n) {
+  return String(Math.round(n)).replace(/\B(?=(\d{3})+(?!\d))/g, ' ') + ' ₽';
+}
+// forms = [1 страница, 2 страницы, 5 страниц]
+function plural(n, forms) {
+  var t = n % 10, h = n % 100;
+  if (t === 1 && h !== 11) return forms[0];
+  if (t >= 2 && t <= 4 && (h < 10 || h >= 20)) return forms[1];
+  return forms[2];
+}
+function clamp(v, max) {
+  var n = parseInt(String(v).replace(/\D/g, ''), 10);
+  if (isNaN(n)) return 0;
+  return Math.max(0, Math.min(n, max));
+}
+function el(id) { return document.getElementById(id); }
+
+function readState() {
+  var s = { qty: {}, extras: {} };
+  QTY.forEach(function (q) { s.qty[q.key] = clamp(el('q-' + q.key).value, q.max); });
+  s.domain = el('domain').value;
+  s.host = el('host').checked;
+  s.support = clamp(el('support').value, 24);
+  EXTRAS.forEach(function (e) { s.extras[e.id] = el('x-' + e.id).checked; });
+  s.client = el('client').value.trim();
+  s.city = el('city').value.trim();
+  s.niche = el('niche').value.trim();
+  s.manager = el('manager').value.trim();
+  s.contact = el('contact').value.trim();
+  return s;
+}
+
+function compute(s) {
+  var q = s.qty;
+  var units = q.pages * PRICE.page + q.links * PRICE.link + q.photos * PRICE.photo + q.items * PRICE.item + PRICE.publish;
+  var fit = null;
+  for (var i = 0; i < PACKS.length; i++) {
+    var p = PACKS[i];
+    if (q.pages <= p.pages && q.links <= p.links && q.photos <= p.photos && q.items <= p.items) { fit = p; break; }
+  }
+  var pack = fit && fit.price <= units ? fit : null;
+  var content = pack ? pack.price : units;
+  var connect = s.domain === 'none' ? 0 : PRICE.connect;
+  var editsSum = q.edits * PRICE.edit;
+  var support = s.support * PRICE.support;
+  var dom = DOMAINS.filter(function (d) { return d.value === s.domain; })[0] || DOMAINS[1];
+
+  // Разбивка содержимого: эти суммы уже внутри строки «к оплате за содержимое», отдельно они не платятся.
+  var parts = [
+    { label: 'Страницы-хабы', calc: q.pages + ' × ' + rub(PRICE.page), sum: q.pages * PRICE.page },
+    { label: 'Кнопки со ссылками', calc: q.links + ' × ' + rub(PRICE.link), sum: q.links * PRICE.link },
+    { label: 'Фото и обложки', calc: q.photos + ' × ' + rub(PRICE.photo), sum: q.photos * PRICE.photo },
+    { label: 'Позиции короткого прайса', calc: q.items ? q.items + ' × ' + rub(PRICE.item) : 'прайс под кнопками не нужен', sum: q.items * PRICE.item },
+    { label: 'Публикация и приёмка', calc: 'один раз', sum: PRICE.publish }
+  ];
+
+  var adds = [{ label: 'Подключение адреса: регистрация, DNS, SSL, редиректы', calc: 'один раз', sum: connect, who: 'нам' }];
+  var thirds = [];
+  var extraWork = 0, extraThird = 0;
+  EXTRAS.forEach(function (e) {
+    if (!s.extras[e.id]) return;
+    if (e.kind === 'work') { extraWork += e.price; adds.push({ label: 'Доп: ' + e.title, calc: 'галочка в смете', sum: e.price, who: 'нам' }); }
+    else { extraThird += e.price; thirds.push({ label: 'Доп: ' + e.title, calc: 'галочка в смете', sum: e.price, who: e.who }); }
+  });
+  adds.push({ label: 'Правки после первой недели', calc: q.edits ? q.edits + ' × ' + rub(PRICE.edit) : '0 — две правки первой недели бесплатны', sum: editsSum, who: 'нам' });
+  adds.push({ label: 'Поддержка и актуализация', calc: s.support ? s.support + ' × ' + rub(PRICE.support) : 'не куплена', sum: support, who: 'нам' });
+
+  thirds.push({ label: dom.label, calc: 'платит ' + dom.who, sum: dom.price, who: dom.who });
+  if (s.host) thirds.push({ label: 'Хостинг Рег.ру, 12 месяцев', calc: '181 ₽ × 12', sum: HOST_YEAR, who: 'Рег.ру' });
+
+  var work = content + adds.reduce(function (t, l) { return t + l.sum; }, 0);
+  var third = thirds.reduce(function (t, l) { return t + l.sum; }, 0);
+  var secondYear = (s.domain === 'none' ? 0 : RENEW) + (s.host ? HOST_YEAR : 0);
+
+  var chargeLabel = pack
+    ? 'Берём пакет «' + pack.name + '»: фикс ' + rub(pack.price) + ' дешевле счётчика'
+    : fit
+      ? 'Пакет «' + fit.name + '» за ' + rub(fit.price) + ' не берём: этот объём по единицам — ' + rub(units)
+      : 'Лимиты пакетов превышены — только счётчик. Страниц сайта нужно больше? Тогда смета на сайт, не на мультилинк.';
+
+  return {
+    parts: parts, adds: adds, thirds: thirds, units: units, pack: pack, fit: fit, content: content,
+    chargeLabel: chargeLabel, connect: connect, editsSum: editsSum, support: support,
+    extraWork: extraWork, extraThird: extraThird, work: work, third: third, total: work + third,
+    dom: dom, secondYear: secondYear, save: pack ? units - pack.price : 0
+  };
+}
+
+// Один и тот же разбор рисуют и страница, и файл: сначала состав, затем то, что реально платится.
+function rows(r) {
+  var out = [];
+  r.parts.forEach(function (l) { out.push({ kind: 'part', label: l.label, calc: l.calc, sum: l.sum, who: 'входит в содержимое' }); });
+  out.push({ kind: 'ref', label: 'Объём по единицам', calc: 'справочная сумма', sum: r.units, who: 'не платится отдельно' });
+  out.push({ kind: 'pay', label: r.chargeLabel, calc: 'к оплате за содержимое', sum: r.content, who: 'нам' });
+  r.adds.forEach(function (l) { out.push({ kind: 'pay', label: l.label, calc: l.calc, sum: l.sum, who: l.who }); });
+  out.push({ kind: 'sub', label: 'Итого наша работа', calc: 'содержимое плюс подключение, допы, правки и поддержка', sum: r.work, who: 'нам' });
+  r.thirds.forEach(function (l) { out.push({ kind: 'other', label: l.label, calc: l.calc, sum: l.sum, who: l.who }); });
+  out.push({ kind: 'sub', label: 'Итого платим третьим лицам', calc: 'адрес и хостинг — это не наша выручка', sum: r.third, who: 'реестр / Рег.ру' });
+  out.push({ kind: 'total', label: 'ИТОГО первый год', calc: '', sum: r.total, who: 'счёт клиенту' });
+  return out;
+}
+
+function render() {
+  var s = readState();
+  var r = compute(s);
+
+  QTY.forEach(function (q) {
+    el('h-' + q.key).textContent = rub(q.price) + ' ' + q.unit + ' · сейчас ' + rub(s.qty[q.key] * q.price);
+  });
+  el('domain-hint').textContent = rub(r.dom.price) + ' — платит ' + r.dom.who + '. ' + r.dom.note;
+  el('support-hint').textContent = rub(PRICE.support) + ' за месяц · сейчас ' + (s.support ? s.support + ' мес = ' + rub(r.support) : '0 ₽');
+
+  var picked = EXTRAS.filter(function (e) { return s.extras[e.id]; });
+  el('extras-title').textContent = 'Дополнительные пункты: отмечено ' + picked.length + ' из ' + EXTRAS.length
+    + ' — включённое уходит в счёт';
+
+  el('stats').innerHTML = [
+    ['Наша работа', rub(r.work), r.pack ? 'пакет «' + r.pack.name + '» ' + rub(r.pack.price) + ' + адрес, правки, допы' : 'по единицам: ' + rub(r.units) + ' + адрес, правки, допы', 'green'],
+    ['Доп. пункты', rub(r.extraWork + r.extraThird), picked.length ? picked.length + ' включено' : 'ни один не выбран', ''],
+    ['Платит не нам', rub(r.third), 'адрес и хостинг', ''],
+    ['Итого первый год', rub(r.total), 'ровно то, что видит клиент в счёте', 'warn'],
+    ['Со второго года', rub(r.secondYear), 'продление адреса' + (s.host ? ' и хостинг' : '') + '; поддержка по желанию', '']
+  ].map(function (x) {
+    return '<div class="stat ' + x[3] + '"><i>' + x[0] + '</i><b>' + x[1] + '</b><i>' + x[2] + '</i></div>';
+  }).join('');
+
+  el('lines').innerHTML = rows(r).map(function (l) {
+    var cls = l.kind === 'total' ? ' class="total"' : (l.kind === 'part' || l.kind === 'ref') ? ' class="sub"' : l.kind === 'sub' ? ' class="group"' : '';
+    return '<tr' + cls + '><td>' + esc(l.label) + '</td><td class="who">' + esc(l.calc) + '</td><td class="money">'
+      + rub(l.sum) + '</td><td class="who">' + esc(l.who) + '</td></tr>';
+  }).join('');
+  return r;
+}
+
+/* ------- файл сметы ------- */
+
+function translit(t) {
+  var m = { а: 'a', б: 'b', в: 'v', г: 'g', д: 'd', е: 'e', ё: 'e', ж: 'zh', з: 'z', и: 'i', й: 'i', к: 'k', л: 'l', м: 'm', н: 'n', о: 'o', п: 'p', р: 'r', с: 's', т: 't', у: 'u', ф: 'f', х: 'h', ц: 'ts', ч: 'ch', ш: 'sh', щ: 'sch', ъ: '', ы: 'y', ь: '', э: 'e', ю: 'yu', я: 'ya' };
+  return t.toLowerCase().split('').map(function (ch) { return m[ch] !== undefined ? m[ch] : ch; }).join('')
+    .replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '') || 'klient';
+}
+function today() {
+  var d = new Date();
+  function p(n) { return (n < 10 ? '0' : '') + n; }
+  return { file: d.getFullYear() + '-' + p(d.getMonth() + 1) + '-' + p(d.getDate()),
+           human: p(d.getDate()) + '.' + p(d.getMonth() + 1) + '.' + d.getFullYear() };
+}
+function esc(s) { return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;'); }
+
+function composition(s) {
+  var q = s.qty;
+  return q.pages + ' ' + plural(q.pages, ['страница', 'страницы', 'страниц']) + ': обложка, имя бренда, '
+    + q.links + ' ' + plural(q.links, ['кнопка', 'кнопки', 'кнопок']) + ' со ссылками, '
+    + q.photos + ' ' + plural(q.photos, ['фото', 'фото', 'фото'])
+    + (q.items ? ', прайс на ' + q.items + ' ' + plural(q.items, ['позиция', 'позиции', 'позиций']) : '')
+    + '. Ссылки проверены с телефона, страница открывается на 4G.';
+}
+
+function estimateText(s, r) {
+  var d = today();
+  var out = [];
+  out.push('Смета на мультилинк' + (s.city ? ' — ' + s.city : ''));
+  out.push((s.client || 'Клиент') + (s.niche ? ' (' + s.niche + ')' : '') + ' · ' + d.human);
+  out.push('');
+  out.push('Состав (внутри цены содержимого, отдельно не оплачивается):');
+  r.parts.forEach(function (l) { out.push('  · ' + l.label + ' — ' + l.calc + ' = ' + rub(l.sum)); });
+  out.push('  По счётчику было бы ' + rub(r.units) + '.');
+  out.push('');
+  out.push('К оплате за содержимое: ' + rub(r.content));
+  out.push('  ' + r.chargeLabel + '.');
+  r.adds.forEach(function (l) { if (l.sum) out.push(l.label + ': ' + rub(l.sum) + ' (нам)'); });
+  out.push('Наша работа: ' + rub(r.work));
+  r.thirds.forEach(function (l) { if (l.sum) out.push(l.label + ': ' + rub(l.sum) + ' — платит ' + l.who); });
+  out.push('Платим третьим лицам: ' + rub(r.third));
+  out.push('');
+  out.push('ИТОГО ПЕРВЫЙ ГОД: ' + rub(r.total));
+  out.push('Со второго года: ' + rub(r.secondYear) + ' — продление адреса' + (s.host ? ' и хостинг' : '') + '; поддержка по желанию 1 000 ₽/мес.');
+  out.push('');
+  out.push('Две правки в первую неделю после сдачи — бесплатно, дальше ' + rub(PRICE.edit) + ' за правку.');
+  out.push('Адрес страницы регистрируется на вашего владельца.');
+  out.push('Онлайн-записи, оплаты, каталога и счётчиков посещений в смете нет: страница только ведёт в мессенджер и на телефон.');
+  if (s.manager) out.push('Смету подготовил: ' + s.manager);
+  if (s.contact) out.push('Связаться: ' + s.contact);
+  out.push('Смета действительна 14 дней.');
+  return out.join('\n');
+}
+
+function estimateHtml(s, r) {
+  var d = today();
+  var body = rows(r).map(function (l) {
+    var cls = l.kind === 'total' ? ' class="total"'
+      : l.kind === 'sub' ? ' class="group"'
+      : (l.kind === 'part' || l.kind === 'ref') ? ' class="sub"' : '';
+    return '<tr' + cls + '><td>' + esc(l.label) + '<span class="c">' + esc(l.calc) + '</span></td>'
+      + '<td class="m">' + rub(l.sum) + '</td><td class="w">' + esc(l.who) + '</td></tr>';
+  }).join('');
+  var extras = EXTRAS.filter(function (e) { return s.extras[e.id]; });
+  return '<!doctype html><html lang="ru"><head><meta charset="utf-8">'
+    + '<meta name="viewport" content="width=device-width, initial-scale=1">'
+    + '<title>Смета на мультилинк — ' + esc(s.client || 'клиент') + '</title><style>'
+    + 'body{margin:0;padding:24px;font:16px/1.55 -apple-system,"Segoe UI",Roboto,Arial,sans-serif;color:#14181f;background:#fff}'
+    + '.w{max-width:760px;margin:0 auto}h1{font-size:22px;margin:0 0 4px}.sub{color:#5b6675;font-size:14px;margin:0 0 20px}'
+    + 'table{width:100%;border-collapse:collapse;margin:0 0 16px}th{text-align:left;font-size:12px;color:#5b6675;'
+    + 'border-bottom:2px solid #14181f;padding:6px 8px}td{padding:7px 8px;border-bottom:1px solid #e2e7ee;vertical-align:top}'
+    + 'td.m{text-align:right;white-space:nowrap;font-variant-numeric:tabular-nums}td.w{color:#5b6675;font-size:13px;width:22%}'
+    + 'tr.total td{font-weight:700;border-top:2px solid #14181f;border-bottom:none}tr.sub td{color:#5b6675;font-style:italic}'
+    + 'tr.group td{font-weight:700;border-top:2px solid #14181f}span.c{display:block;color:#78848f;font-size:12px;font-style:normal}'
+    + 's{color:#93a0b1}.box{background:#f4f7fb;border:1px solid #e2e7ee;border-radius:10px;padding:14px 16px;margin:16px 0}'
+    + '.box b{display:block;margin-bottom:6px}ul{margin:6px 0 0;padding-left:20px}li{margin-bottom:4px}'
+    + '.sign{margin-top:26px;padding-top:14px;border-top:1px solid #e2e7ee}.foot{color:#93a0b1;font-size:12px;margin-top:18px}'
+    + '@media print{body{padding:0}.w{max-width:none}}@page{margin:16mm}'
+    + '</style></head><body><div class="w">'
+    + '<h1>Смета на мультилинк</h1>'
+    + '<p class="sub">' + esc(s.client || 'Клиент') + (s.city ? ' · ' + esc(s.city) : '') + (s.niche ? ' · ' + esc(s.niche) : '')
+    + ' · ' + d.human + '</p>'
+    + '<table><thead><tr><th>Позиция</th><th>Сумма</th><th>Кому платим</th></tr></thead><tbody>' + body + '</tbody></table>'
+    + '<div class="box"><b>Что входит в работу</b>' + esc(composition(s)) +
+    '<ul><li>Две правки в первую неделю после сдачи — бесплатно, дальше 300 ₽ за правку.</li>'
+    + '<li>Адрес страницы регистрируется на вашего владельца — это ваша собственность, а не наша.</li>'
+    + '<li>Онлайн-записи, оплаты, каталога и счётчиков посещений нет: страница ведёт в WhatsApp, Telegram, на телефон и в соцсети.</li></ul></div>'
+    + (extras.length ? '<div class="box"><b>Дополнительные пункты включены</b><ul>'
+        + extras.map(function (e) { return '<li>' + esc(e.title) + ' — ' + rub(e.price) + '. ' + esc(e.when) + '</li>'; }).join('')
+        + '</ul></div>' : '')
+    + (r.pack ? '' : '<div class="box"><b>Можно дороже</b>Объём вышел за лимиты мультилинка — значит вопросов у клиентов больше, чем кнопок. Дальше считаем сайт:'
+        + ' страница 1 000 ₽, пакет «Старт» 5 000 ₽ за 4 страницы с прайсом и галереей. Мультилинк при этом остаётся рабочей визиткой и не пропадает.</div>')
+    + '<div class="box"><b>Второй год</b>' + rub(r.secondYear) + ' — продление адреса'
+    + (s.host ? ' и хостинг' : '') + '. Дальше поддержка по желанию — 1 000 ₽ в месяц, без неё страница работает.'
+    + '</div><div class="sign">'
+    + (s.manager ? 'Смету подготовил: ' + esc(s.manager) + '<br>' : '')
+    + (s.contact ? 'Связаться: ' + esc(s.contact) + '<br>' : '')
+    + 'Смета действительна 14 дней.</div>'
+    + '<p class="foot">Цены на адрес и хостинг — прайс Рег.ру от 27.10.2026; перед подписанием сверяем в личном кабинете. '
+    + 'Работа и сторонние платежи в смете разделены специально: адрес — это плата реестру, а не за страницу.</p>'
+    + '</div></body></html>';
+}
+
+function download(name, text, mime) {
+  var blob = new Blob([text], { type: mime });
+  var url = URL.createObjectURL(blob);
+  var a = document.createElement('a');
+  a.href = url; a.download = name;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  setTimeout(function () { URL.revokeObjectURL(url); }, 2000);
+}
+
+function base(s) {
+  return 'smeta-multilink-' + translit(s.client || 'klient') + '-' + today().file;
+}
+
+function build() {
+  var s = readState();
+  var r = compute(s);
+  var name = base(s) + '.html';
+  download(name, estimateHtml(s, r), 'text/html;charset=utf-8');
+  save();
+  el('status').textContent = 'Файл ' + name + ' создан — можно отправлять клиенту или распечатать как PDF.';
+}
+
+function buildTxt() {
+  var s = readState();
+  var r = compute(s);
+  download(base(s) + '.txt', estimateText(s, r), 'text/plain;charset=utf-8');
+  save();
+  el('status').textContent = 'Текст сметы скачан как .txt — удобно вставить в переписку.';
+}
+
+function copyText() {
+  var s = readState(), r = compute(s);
+  var text = estimateText(s, r);
+  if (navigator.clipboard && navigator.clipboard.writeText) {
+    navigator.clipboard.writeText(text).then(function () {
+      el('status').textContent = 'Текст сметы скопирован — вставляйте в WhatsApp или Telegram.';
+    }, function () { el('status').textContent = 'Браузер не дал доступ к буферу — скачайте .txt.'; });
+  } else {
+    el('status').textContent = 'Буфер обмена недоступен — скачайте текстовый файл.';
+  }
+}
+
+var KEY = 'smeta-ml-v1';
+function save() {
+  var s = readState();
+  var data = { qty: s.qty, domain: s.domain, host: s.host, support: s.support, extras: s.extras,
+               client: s.client, city: s.city, niche: s.niche, manager: s.manager, contact: s.contact };
+  try { localStorage.setItem(KEY, JSON.stringify(data)); } catch (e) {}
+}
+function restore() {
+  var raw;
+  try { raw = localStorage.getItem(KEY); } catch (e) { raw = null; }
+  if (!raw) return;
+  try {
+    var d = JSON.parse(raw);
+    QTY.forEach(function (q) { if (d.qty && d.qty[q.key] != null) el('q-' + q.key).value = d.qty[q.key]; });
+    if (d.domain) el('domain').value = d.domain;
+    if (typeof d.host === 'boolean') el('host').checked = d.host;
+    if (d.support != null) el('support').value = d.support;
+    EXTRAS.forEach(function (e) { var box = el('x-' + e.id); if (box && d.extras && d.extras[e.id]) box.checked = true; });
+    ['client', 'city', 'niche', 'manager', 'contact'].forEach(function (k) { if (d[k]) el(k).value = d[k]; });
+  } catch (e) {}
+}
+
+function mount() {
+  el('qty').innerHTML = QTY.map(function (q) {
+    return '<div class="field"><label for="q-' + q.key + '">' + q.label + '</label>'
+      + '<input type="number" id="q-' + q.key + '" min="0" max="' + q.max + '" step="1" value="' + DEFAULTS[q.key] + '" inputmode="numeric">'
+      + '<span class="hint" id="h-' + q.key + '"></span></div>';
+  }).join('');
+  el('domain').innerHTML = DOMAINS.map(function (d) {
+    return '<option value="' + d.value + '">' + esc(d.label) + '</option>';
+  }).join('');
+  el('extras').innerHTML = EXTRAS.map(function (e) {
+    return '<label class="check"><input type="checkbox" id="x-' + e.id + '"><span>' + esc(e.title) + ' — ' + rub(e.price)
+      + (e.kind === 'third' ? ' (платит ' + esc(e.who) + ')' : '') + '<small>' + esc(e.when) + '</small></span></label>';
+  }).join('');
+  var work = EXTRAS.filter(function (e) { return e.kind === 'work'; });
+  el('foot').innerHTML = 'Расценки мультилинка: страница-хаб ' + rub(PRICE.page) + ', кнопка-ссылка ' + rub(PRICE.link)
+    + ', фото ' + rub(PRICE.photo) + ', позиция прайса ' + rub(PRICE.item) + ', подключение адреса ' + rub(PRICE.connect)
+    + ', публикация ' + rub(PRICE.publish) + ', правка ' + rub(PRICE.edit) + ', поддержка ' + rub(PRICE.support) + ' в месяц. '
+    + 'Пакеты: ' + PACKS.map(function (p) { return '«' + p.name + '» ' + rub(p.price); }).join(', ')
+    + ' — фикс берётся только если он не дороже счётчика. Доп. пунктов: ' + work.length
+    + ' наших работ и платёж третьим лицам (адрес в зоне .рф). Вторая линейка — <a href="index.html">смета на сайт</a>: '
+    + 'страница ' + rub(1000) + ', пакеты 5 000 / 8 000 / 12 000 ₽. Цены адреса и регистратора взяты 27.10.2026 с публичных страниц Рег.ру '
+    + '(регистрация .ru и .рф — ' + rub(169) + ' на первый год по акции, продление — ' + rub(RENEW) + ' с 01.04.2026, '
+    + 'хостинг — от ' + rub(HOST_MONTH) + ' в месяц).';
+
+  var inputs = document.querySelectorAll('input, select');
+  for (var i = 0; i < inputs.length; i++) {
+    inputs[i].addEventListener('input', function () { render(); });
+    inputs[i].addEventListener('change', function () { render(); });
+  }
+  el('make').addEventListener('click', build);
+  el('maketxt').addEventListener('click', buildTxt);
+  el('copy').addEventListener('click', copyText);
+}
+
+mount();
+restore();
+render();
+</script>
+</body>
+</html>
